@@ -5,6 +5,8 @@ import random
 import math 
 from xgboost import XGBClassifier
 from sklearn.metrics import roc_auc_score,f1_score,recall_score
+from sklearn import svm
+from sklearn.linear_model import LogisticRegression
 
 
 nval = 3
@@ -52,7 +54,12 @@ def read_full_dataset(path = "example15bmc"):
     treat_dataset = read_treat_dataset()
     return pd.merge(treat_dataset, join_dataset)
 
-def read_oleg_dataset():
+
+def drop_trea(full_dataset):
+    return full_dataset.drop(columns=['radio','surgery','chemo','hormone'])
+    
+
+def read_mike_dataset():
     join_dataset = pd.read_csv("ex15bmcMerged.csv")
     treat_dataset = read_treat_dataset()
     return pd.merge(treat_dataset, join_dataset)
@@ -77,20 +84,16 @@ def study_fold(full_dataset, shuffled_study_list, nval):
     return prepare_datasets(full_dataset, shuffled_study_list[nval:]), prepare_datasets(full_dataset, shuffled_study_list[:nval])
 
 
-def calc_results(full_dataset, test_study):
+def calc_results(full_dataset, test_study, clf):
     all_train_studies = list(set(full_dataset['study']) - set([test_study]))
     (X_test, y_test)  = prepare_dataset(full_dataset, test_study)
     (X_train,y_train) = prepare_datasets(full_dataset, all_train_studies) 
-    
-    print(X_train.shape, X_test.shape)
-    
-    clf = XGBClassifier()
+        
     clf.fit(X_train,y_train)
     
-#    y_pred_prob = clf.predict_proba(X_test)[:,1]
     y_pred      = clf.predict(X_test)
-    print(y_test)
-    print(y_pred)
+#    print(y_test)
+#    print(y_pred)
     acc = np.mean(y_pred == y_test)
 #    auc_1 = roc_auc_score(y_test, y_pred_prob)
 #    auc_2 = roc_auc_score(y_test, y_pred)
@@ -101,19 +104,29 @@ def calc_results(full_dataset, test_study):
 
 
 full_dataset = read_full_dataset()
-oleg_dataset = read_oleg_dataset()
+mike_dataset = read_mike_dataset()
 treat_dataset = read_treat_dataset()
 
+full_notrea_dataset = drop_trea(full_dataset)
+mike_notrea_dataset = drop_trea(mike_dataset)
 
 all_studies = list(set(full_dataset['study']))
 
 for test_study in sorted(all_studies):
     print("study to test:", test_study)
-    print("full: ", *calc_results(full_dataset, test_study))
+    print("full:            ", *calc_results(full_dataset,        test_study, XGBClassifier()))
+    print("full_notrea:     ", *calc_results(full_notrea_dataset, test_study, XGBClassifier()))
     print("")
-    print("mike: ", *calc_results(oleg_dataset, test_study))
+    print("mike:            ", *calc_results(mike_dataset, test_study, XGBClassifier()))
+    print("mike_svm:        ", *calc_results(mike_dataset, test_study, svm.SVC()))
+    print("mike_logi:       ", *calc_results(mike_dataset, test_study, LogisticRegression(max_iter=1000)))
+    print("mike_notrea:     ", *calc_results(mike_notrea_dataset, test_study, XGBClassifier()))
+    print("mike_notrea_svm: ", *calc_results(mike_notrea_dataset, test_study, svm.SVC()))
+    print("mike_notrea_logi:", *calc_results(mike_notrea_dataset, test_study, LogisticRegression(max_iter=1000)))
     print("")
-    print("trea: ", *calc_results(treat_dataset, test_study))
+    print("trea:            ", *calc_results(treat_dataset, test_study, XGBClassifier()))
+    print("trea_svm:        ", *calc_results(treat_dataset, test_study, svm.SVC()))
+    print("trea_logi:       ", *calc_results(treat_dataset, test_study, LogisticRegression(max_iter=1000)))
     print("")
     print("")
     print("")

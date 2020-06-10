@@ -7,7 +7,9 @@ from xgboost import XGBClassifier
 from sklearn.metrics import recall_score
 from sklearn.model_selection import RepeatedStratifiedKFold
 from funs_balance import random_upsample_balance
-
+from collections import defaultdict
+from sklearn import svm
+from sklearn.linear_model import LogisticRegression
 
 
 def convert_surgery(x): 
@@ -61,6 +63,11 @@ def read_mike_dataset():
 def drop_trea(full_dataset):
     return full_dataset.drop(columns=['radio','surgery','chemo','hormone'])
 
+def select_pam50(full_dataset):
+    pam50 = ['ACTR3B', 'ANLN', 'BAG1', 'BCL2', 'BIRC5', 'BLVRA', 'CCNB1', 'CCNE1', 'CDC20', 'CDC6', 'NUF2', 'CDH3', 'CENPF', 'CEP55', 'CXXC5', 'EGFR', 'ERBB2', 'ESR1', 'EXO1', 'FGFR4', 'FOXA1', 'FOXC1', 'GPR160', 'GRB7', 'KIF2C', 'NDC80', 'KRT14', 'KRT17', 'KRT5', 'MAPT', 'MDM2', 'MELK', 'MIA', 'MKI67', 'MLPH', 'MMP11', 'MYBL2', 'MYC', 'NAT1', 'ORC6', 'PGR', 'PHGDH', 'PTTG1', 'RRM2', 'SFRP1', 'SLC39A6', 'TMEM45B', 'TYMS', 'UBE2C', 'UBE2T']
+    selected_pam50 = list(set(pam50).intersection(set(full_dataset)))
+    return full_dataset[selected_pam50 + ['study', 'posOutcome', 'patient_ID', 'pCR', 'RFS', 'DFS']]
+    
 def prepare_full_dataset(full_dataset):
     X = full_dataset.drop(columns=['study', 'patient_ID','pCR', 'RFS', 'DFS', 'posOutcome']).to_numpy()
     y_posOutcome = full_dataset['posOutcome'].to_numpy()
@@ -103,12 +110,10 @@ def get_balanced_split(full_dataset):
     return np.concatenate(all_X_train),  np.concatenate(all_X_test), np.concatenate(all_y_train), np.concatenate(all_y_test)
 
 
-def calc_results_for_fold(full_dataset):
+def calc_results_for_fold(full_dataset, clf):
     
     X_train, X_test, y_train, y_test = get_balanced_split(full_dataset)
     
-    
-    clf = XGBClassifier()
     clf.fit(X_train,y_train)
     
     y_pred      = clf.predict(X_test)
@@ -119,7 +124,9 @@ def calc_results_for_fold(full_dataset):
     
     return acc, recall_0, recall_1
                     
-    
+def list_to_4g_str(l):
+    return "  ".join("%.4g"%d for d in l)
+        
 
 
 full_dataset = read_full_dataset()
@@ -128,31 +135,44 @@ treat_dataset = read_treat_dataset()
 
 full_notrea_dataset = drop_trea(full_dataset)
 mike_notrea_dataset = drop_trea(mike_dataset)
+mike_pam50          = select_pam50(mike_dataset)
+full_pam50          = select_pam50(full_dataset)
 
-rez_full = []
-rez_mike = []
-rez_trea = []
-rez_notrea_full = []
-rez_notrea_mike = []
+
+rez = defaultdict(list)
+    
+print_order = ["full", "full_notrea", "full_pam50", "mike", "mike_svm","mike_logi", 
+               "mike_notrea", "mike_notrea_svm", "mike_notrea_logi",
+               "mike_pam50", "mike_pam50_svm", "mike_pam50_logi",
+               "trea", "trea_svm", "trea_logi"]
+max_len_order = max(map(len,print_order))
 
 for i in range(10):
     print("split ", i)
-    rez_full.append(       calc_results_for_fold(full_dataset))    
-    rez_notrea_full.append(calc_results_for_fold(full_notrea_dataset))    
-    rez_mike.append(       calc_results_for_fold(mike_dataset))
-    rez_notrea_mike.append(calc_results_for_fold(mike_notrea_dataset))
-    rez_trea.append(       calc_results_for_fold(treat_dataset))
+    rez["full"].append(       calc_results_for_fold(full_dataset, XGBClassifier()))    
+    rez["full_notrea"].append(calc_results_for_fold(full_notrea_dataset, XGBClassifier()))
+    rez["full_pam50"].append( calc_results_for_fold(full_pam50, XGBClassifier()))
+    
+    rez["mike"].append(       calc_results_for_fold(mike_dataset, XGBClassifier()))    
+    rez["mike_svm"].append(   calc_results_for_fold(mike_dataset, svm.SVC()))
+    rez["mike_logi"].append(  calc_results_for_fold(mike_dataset, LogisticRegression(max_iter=1000)))
+    
+    rez["mike_notrea"].append(     calc_results_for_fold(mike_notrea_dataset, XGBClassifier()))
+    rez["mike_notrea_svm"].append( calc_results_for_fold(mike_notrea_dataset, svm.SVC()))
+    rez["mike_notrea_logi"].append(calc_results_for_fold(mike_notrea_dataset, LogisticRegression(max_iter=1000)))
+    
+    rez["mike_pam50"].append(     calc_results_for_fold(mike_pam50, XGBClassifier()))
+    rez["mike_pam50_svm"].append( calc_results_for_fold(mike_pam50, svm.SVC()))
+    rez["mike_pam50_logi"].append(calc_results_for_fold(mike_pam50, LogisticRegression(max_iter=1000)))
+    
+    rez["trea"].append(     calc_results_for_fold(treat_dataset, XGBClassifier()))
+    rez["trea_svm"].append( calc_results_for_fold(treat_dataset, svm.SVC()))
+    rez["trea_logi"].append(calc_results_for_fold(treat_dataset, LogisticRegression(max_iter=1000)))
 
     
-    print("full:        ", *rez_full[-1])
-    print("full_notrea: ", *rez_notrea_full[-1])
-    print("mike:        ", *rez_mike[-1])
-    print("mike_notrea: ", *rez_notrea_mike[-1])
-    print("trea:        ", *rez_trea[-1])
+    for order in print_order:
+        print(order, " "*(max_len_order - len(order)), ": ", list_to_4g_str(rez[order][-1]))
 
-print("==> mean full:       ", *np.mean(rez_full, axis=0))
-print("==> mean notrea_full:", *np.mean(rez_notrea_full, axis=0))
-print("==> mean mike:       ", *np.mean(rez_mike, axis=0))
-print("==> mean notrea_mike:", *np.mean(rez_notrea_mike, axis=0))
-print("==> mean trea:       ", *np.mean(rez_trea, axis=0))
+for order in print_order:
+    print("==> ", order, " "*(max_len_order - len(order)), ": ", list_to_4g_str(np.mean(rez[order], axis=0)))
             
