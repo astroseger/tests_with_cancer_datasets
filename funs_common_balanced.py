@@ -43,3 +43,12 @@ def get_balanced_split(full_dataset):
     return np.concatenate(all_X_train),  np.concatenate(all_X_test), np.concatenate(all_y_train), np.concatenate(all_y_test)
 
 
+def get_balanced_study(full_dataset, study):
+    X,y = prepare_dataset(full_dataset, study)
+    return random_upsample_balance(X, y)
+        
+def get_balanced_studies_except_test_study(full_dataset, test_study):
+    all_studies = list(set(full_dataset['study']))
+    all_Xy = [get_balanced_study(full_dataset, study) for study in all_studies if (study != test_study)]
+    all_X, all_y = zip(*all_Xy)
+    return np.concatenate(all_X),  np.concatenate(all_y)

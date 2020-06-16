@@ -79,6 +79,12 @@ def prepare_dataset(full_dataset, study, y_field = 'posOutcome'):
     X = study_dataset.drop(columns=['study', 'patient_ID','pCR', 'RFS', 'DFS', 'posOutcome']).to_numpy(dtype = np.float)
     y_posOutcome = study_dataset[y_field].to_numpy(dtype = np.float)
     return X, y_posOutcome
+
+def prepare_datasets(full_dataset, studies):
+    Xys = [prepare_dataset(full_dataset, study ) for study in studies]
+    Xs, ys = zip(*Xys)
+    return np.concatenate(Xs), np.concatenate(ys)
+            
             
 def list_to_4g_str(l):
     return "  ".join("%.4g"%d for d in l)
