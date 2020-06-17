@@ -1,0 +1,4 @@
+cat ../rez_experement17_deepstudy12_pam50_cat_pcr_rfs_dfs.txt |grep == > selected_rez_experement17_deepstudy12_pam50_cat_pcr_rfs_dfs.txt
+cat ../rez_experement18_deepstudy12_mike_pcr_rfs_dfs.txt      |grep == > selected_rez_experement18_deepstudy12_mike_pcr_rfs_dfs.txt
+python count_rez_auc_xgboost.py selected_rez_experement17_deepstudy12_pam50_cat_pcr_rfs_dfs.txt > count_rez_auc_xgboost_17.txt
+python count_rez_auc_xgboost.py selected_rez_experement18_deepstudy12_mike_pcr_rfs_dfs.txt > count_rez_auc_xgboost_18.txt
