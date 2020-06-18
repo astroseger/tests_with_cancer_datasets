@@ -59,6 +59,11 @@ def read_mike_dataset():
     treat_dataset = read_treat_dataset()
     return pd.merge(treat_dataset, join_dataset)
 
+def read_combat_dataset():
+    join_dataset = pd.read_csv("merged-combat15.csv")
+    treat_dataset = read_treat_dataset()
+    return pd.merge(treat_dataset, join_dataset)
+    
 
 def drop_trea(full_dataset):
     return full_dataset.drop(columns=['radio','surgery','chemo','hormone'])
