@@ -58,7 +58,7 @@ def print_results_for_field(dataset, field, prefix):
     print_order = ["full_xgboost", "full_logi", "notrea_xgboost", "notrea_logi"]
     max_len_order = max(map(len,print_order))
     rez = defaultdict(list)
-    for i in range(20):
+    for i in range(100):
         ds = get_balanced_split(dataset, field)
         rez["full_xgboost"].append(calc_results_simple(*ds, XGBClassifier()))
         rez["full_logi"].append(calc_results_simple(*ds, LogisticRegression(max_iter=1000)))
