@@ -12,11 +12,11 @@ from sklearn import svm
 from sklearn.linear_model import LogisticRegression
 from funs_common import prepare_dataset
 
-            
-def get_balanced_split_for_study(full_dataset, study):
-    X,y = prepare_dataset(full_dataset, study)
-    
 
+def get_balanced_split_for_study(full_dataset, study, y_field = "posOutcome"):
+    X,y = prepare_dataset(full_dataset, study, y_field = y_field)
+    
+    
     kf = RepeatedStratifiedKFold(n_splits=5)
     (train_index, test_index) = next(kf.split(X,y))
     
@@ -26,16 +26,15 @@ def get_balanced_split_for_study(full_dataset, study):
     X_train, y_train = random_upsample_balance(X_train, y_train)
     X_test, y_test   = random_upsample_balance(X_test, y_test)
     
-    
     return X_train, X_test, y_train, y_test
-        
+                                
 
-def get_balanced_split(full_dataset):
+def get_balanced_split(full_dataset, y_field = 'posOutcome'):
     
     all_X_train, all_X_test, all_y_train, all_y_test = [],[],[],[]
-
+    
     for study in list(set(full_dataset['study'])):
-        X_train, X_test, y_train, y_test = get_balanced_split_for_study(full_dataset, study)
+        X_train, X_test, y_train, y_test = get_balanced_split_for_study(full_dataset, study, y_field)
         all_X_train.append(X_train)
         all_X_test.append(X_test)
         all_y_train.append(y_train)

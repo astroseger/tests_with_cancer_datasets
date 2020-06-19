@@ -127,8 +127,15 @@ pd_combat = pd.read_csv("merged-combat15.csv")
 selected_pam50  = list(set(get_pam50_list()).intersection(set(pd_combat)))    
 pd_combat_pam50 = pd_combat[["patient_ID"] + selected_pam50]
 
-for n_cluster in range(2,8):
-    subclusters = make_subclustering(pd_combat_pam50, pd_types, 2)
+pam_types_cat_dataset = read_pam_types_cat_dataset()
+
+#print(list(pam_types_cat_dataset))
+print_results(pam_types_cat_dataset, "old")
+
+
+
+for n_cluster in range(1,8):
+    subclusters = make_subclustering(pd_combat_pam50, pd_types, n_cluster)
     dataset = add_subclusters_as_dummies(treat_dataset, subclusters)
     
 #    for t in all_types:
