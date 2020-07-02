@@ -53,7 +53,7 @@ def remove_nany_Xy(X,y):
     keep = np.isfinite(y)
     return X[keep], y[keep]
 
-def print_results_for_field(Xt_full, dataset_for_y, field):
+def print_results_for_field(Xt_full, dataset_for_y, field, prefix):
     
     y_full = dataset_for_y[field].to_numpy()    
     
@@ -74,8 +74,34 @@ def print_results_for_field(Xt_full, dataset_for_y, field):
         sys.stdout.flush()
         
     for order in print_order:
-        print("==> ", order, " "*(max_len_order - len(order)), ": ", list2d_to_4g_str_pm(rez[order]))
+        print("==> ", field, prefix, order, " "*(max_len_order - len(order)), ": ", list2d_to_4g_str_pm(rez[order]))
                 
+
+def print_results(X_full, n_components, dataset_sel, prefix):
+    lda = LatentDirichletAllocation(n_components=n_components)
+    Xt_full = lda.fit_transform(X_full - np.min(X_full))
+    
+    print("==> pCR", prefix)
+    print_results_for_field(Xt_full, dataset_sel, "pCR", prefix)
+    print("")
+    print("")
+
+
+    print("==> RFS", prefix)
+    print_results_for_field(Xt_full, dataset_sel, "RFS", prefix)
+    print("")
+    print("")
+
+
+    print("==> DFS", prefix)
+    print_results_for_field(Xt_full, dataset_sel, "DFS", prefix)
+    print("")
+    print("")
+
+    print("==> posOutcome", prefix)
+    print_results_for_field(Xt_full, dataset_sel, "posOutcome", prefix)
+    print("")
+    print("")
     
 
 combat_dataset = read_combat_dataset()
@@ -88,30 +114,6 @@ X_full, _ = prepare_full_dataset(dataset_sel)
 
 
 
-#lda = LatentDirichletAllocation(n_components=20, topic_word_prior = 0.1)
-lda = LatentDirichletAllocation(n_components=20, topic_word_prior = 0.1)
-Xt_full = lda.fit_transform(X_full - np.min(X_full))
-
-print("==> pCR (full) ")
-print_results_for_field(Xt_full, dataset_sel, "pCR")
-print("")
-print("")
-
-
-print("==> RFS (full)")
-print_results_for_field(Xt_full, dataset_sel, "RFS")
-print("")
-print("")
-
-
-print("==> DFS (full)")
-print_results_for_field(Xt_full, dataset_sel, "DFS")
-print("")
-print("")
-
-print("==> posOutcome (full)")
-print_results_for_field(Xt_full, dataset_sel, "posOutcome")
-print("")
-print("")
-
+for n_components in [5, 10, 20, 100, 200]:
+    print_results(X_full, n_components, dataset_sel, "nc" + str(n_components))
 
